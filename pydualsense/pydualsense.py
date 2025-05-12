@@ -274,8 +274,8 @@ class pydualsense:  # noqa: N801
         self.state.LY = states[2] - 128
         self.state.RX = states[3] - 128
         self.state.RY = states[4] - 128
-        self.state.L2 = bool(states[5])
-        self.state.R2 = bool(states[6])
+        self.state.L2 = states[5]
+        self.state.R2 = states[6]
 
         # state 7 always increments -> not used anywhere
 
@@ -632,9 +632,7 @@ class DSState:
             False,
             False,
         )
-        self.L1, self.L2, self.L3, self.R1, self.R2, self.R3, self.R2Btn, self.L2Btn = (
-            False,
-            False,
+        self.L1, self.L3, self.R1, self.R3, self.R2Btn, self.L2Btn = (
             False,
             False,
             False,
@@ -654,7 +652,7 @@ class DSState:
         ) = False, False, False, False, False, False, False, False
         self.touchFinger1, self.touchFinger2 = False, False
         self.micBtn = False
-        self.RX, self.RY, self.LX, self.LY = 128, 128, 128, 128
+        self.RX, self.RY, self.LX, self.LY, self.R2, self.L2 = 128, 128, 128, 128, 0, 0
         self.trackPadTouch0, self.trackPadTouch1 = DSTouchpad(), DSTouchpad()
         self.gyro = DSGyro()
         self.accelerometer = DSAccelerometer()
