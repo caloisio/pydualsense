@@ -547,24 +547,15 @@ class pydualsense:  # noqa: N801
 
             outReport[10] = 0x10 if self.audio.microphone_mute is True else 0x00
 
-            # add right trigger mode + parameters to packet
+            # add right trigger mode + 10 parameters to packet (contiguous block)
             outReport[11] = self.triggerR.mode.value
-            outReport[12] = self.triggerR.forces[0]
-            outReport[13] = self.triggerR.forces[1]
-            outReport[14] = self.triggerR.forces[2]
-            outReport[15] = self.triggerR.forces[3]
-            outReport[16] = self.triggerR.forces[4]
-            outReport[17] = self.triggerR.forces[5]
-            outReport[20] = self.triggerR.forces[6]
+            for i in range(10):
+                outReport[12 + i] = self.triggerR.forces[i]
 
+            # add left trigger mode + 10 parameters to packet (contiguous block)
             outReport[22] = self.triggerL.mode.value
-            outReport[23] = self.triggerL.forces[0]
-            outReport[24] = self.triggerL.forces[1]
-            outReport[25] = self.triggerL.forces[2]
-            outReport[26] = self.triggerL.forces[3]
-            outReport[27] = self.triggerL.forces[4]
-            outReport[28] = self.triggerL.forces[5]
-            outReport[31] = self.triggerL.forces[6]
+            for i in range(10):
+                outReport[23 + i] = self.triggerL.forces[i]
 
             outReport[39] = self.light.ledOption.value
             outReport[42] = self.light.pulseOptions.value
@@ -611,24 +602,15 @@ class pydualsense:  # noqa: N801
 
             outReport[11] = 0x10 if self.audio.microphone_mute is True else 0x00
 
-            # add right trigger mode + parameters to packet
+            # add right trigger mode + 10 parameters to packet (contiguous block)
             outReport[12] = self.triggerR.mode.value
-            outReport[13] = self.triggerR.forces[0]
-            outReport[14] = self.triggerR.forces[1]
-            outReport[15] = self.triggerR.forces[2]
-            outReport[16] = self.triggerR.forces[3]
-            outReport[17] = self.triggerR.forces[4]
-            outReport[18] = self.triggerR.forces[5]
-            outReport[21] = self.triggerR.forces[6]
+            for i in range(10):
+                outReport[13 + i] = self.triggerR.forces[i]
 
+            # add left trigger mode + 10 parameters to packet (contiguous block)
             outReport[23] = self.triggerL.mode.value
-            outReport[24] = self.triggerL.forces[0]
-            outReport[25] = self.triggerL.forces[1]
-            outReport[26] = self.triggerL.forces[2]
-            outReport[27] = self.triggerL.forces[3]
-            outReport[28] = self.triggerL.forces[4]
-            outReport[29] = self.triggerL.forces[5]
-            outReport[32] = self.triggerL.forces[6]
+            for i in range(10):
+                outReport[24 + i] = self.triggerL.forces[i]
 
             outReport[40] = self.light.ledOption.value
             outReport[43] = self.light.pulseOptions.value
@@ -925,8 +907,9 @@ class DSTrigger:
         # trigger modes
         self.mode: TriggerModes = TriggerModes.Off
 
-        # force parameters for the triggers
-        self.forces = [0 for i in range(7)]
+        # force parameters for the triggers (mode + 10 params make up the
+        # firmware trigger block; forces holds those 10 parameter bytes)
+        self.forces = [0 for i in range(10)]
 
     def setForce(self, forceID: int = 0, force: int = 0) -> None:
         """
@@ -943,8 +926,8 @@ class DSTrigger:
         if not isinstance(forceID, int) or not isinstance(force, int):
             raise TypeError("forceID and force needs to be type int")
 
-        if forceID > 6 or forceID < 0:
-            raise Exception("only 7 parameters available")
+        if forceID > 9 or forceID < 0:
+            raise Exception("only 10 parameters available")
 
         self.forces[forceID] = force
 
@@ -962,6 +945,32 @@ class DSTrigger:
             raise TypeError("Trigger mode parameter needs to be of type `TriggerModes`")
 
         self.mode = mode
+
+    def setTriggerEffect(self, effect_data: List[int]) -> None:
+        """Apply a zone-packed effect built by :mod:`pydualsense.trigger_effects`.
+
+        The ``TriggerEffectGenerator``/``AppleStyleTriggerEffects`` factories fill an
+        11-byte array: byte 0 is the firmware mode, bytes 1..10 the parameters. This
+        sets the trigger ``mode`` and all 10 parameter bytes, which the output report
+        now carries as a contiguous block. Every generator effect -- including the
+        Vibration/Bow/Galloping/Machine effects that use the upper parameters (e.g.
+        the vibration frequency at param 9) -- is reproduced exactly.
+
+        Args:
+            effect_data: 11-byte effect array from a generator factory
+                (mode + 10 params).
+
+        Raises:
+            TypeError: effect_data is not a list of ints.
+            ValueError: effect_data has fewer than 11 elements (mode + 10 params).
+        """
+        if not isinstance(effect_data, list) or not all(isinstance(b, int) for b in effect_data):
+            raise TypeError("effect_data needs to be a list of int")
+        if len(effect_data) < 11:
+            raise ValueError("effect_data needs at least 11 bytes (mode + 10 params)")
+
+        self.mode = TriggerModes(effect_data[0])
+        self.forces = [effect_data[i] for i in range(1, 11)]
 
 
 class DSGyro:
