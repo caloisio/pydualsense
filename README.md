@@ -60,6 +60,31 @@ ds.close() # closing the controller
 
 See [examples](https://github.com/flok/pydualsense/tree/master/examples) or [examples docs](https://flok.github.io/pydualsense/examples.html) folder for some more ideas
 
+## Adaptive trigger effects
+
+Beyond `setMode`/`setForce`, `TriggerEffectGenerator` builds the zone-packed
+adaptive-trigger effects (Feedback, Weapon, Vibration, Bow, Galloping, Machine,
+…) as a byte array, applied through `DSTrigger.setTriggerEffect`:
+
+```python
+from pydualsense import pydualsense, TriggerEffectGenerator
+
+ds = pydualsense()
+ds.init()
+
+effect = [0] * 11
+TriggerEffectGenerator.feedback(effect, 0, position=5, strength=6)  # resist past halfway
+ds.triggerR.setTriggerEffect(effect)
+ds.sendReport()
+```
+
+`setTriggerEffect` carries the mode + all 10 trigger parameter bytes as the
+contiguous block the output report sends, so every generator effect -- including
+the ones that use the upper parameters (Vibration/Bow/Galloping/Machine, e.g. the
+vibration frequency) -- is reproduced exactly. See
+`examples/trigger_effects_demo.py`, or `examples/trigger_effects_gallery.py` to
+step through every effect interactively on a connected controller.
+
 # Help wanted
 
 Help wanted from people that want to use this and have feature requests. Just open a issue with the correct label.
